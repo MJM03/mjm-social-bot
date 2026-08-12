@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { decryptSession, tiktokCookie } from './lib/tiktokSession';
 import TikTokUpload from './TikTokUpload';
+import ContentPlanner from './ContentPlanner';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,6 @@ export default async function Home() {
 
   const cards = [
     ['Facebook', 'Pendiente', 'Lo conectaremos después de cerrar TikTok.'],
-    ['Calendario', 'Próximamente', 'Programación segura de publicaciones.'],
     ['Métricas', 'Próximamente', 'Vistas, interacción y rendimiento por publicación.']
   ];
 
@@ -26,7 +26,7 @@ export default async function Home() {
           <p>Conecta tus cuentas, prepara publicaciones, programa contenido y revisa qué está funcionando.</p>
           <div className="actions">
             <a className="primary" href="/api/auth/tiktok">{connected ? 'Reconectar TikTok' : 'Conectar TikTok'}</a>
-            <a className="secondary" href="#status">Ver estado</a>
+            <a className="secondary" href="#calendar">Abrir calendario</a>
           </div>
         </div>
         <div className="panel">
@@ -63,10 +63,12 @@ export default async function Home() {
         ))}
       </section>
 
+      <ContentPlanner />
+
       <section className="roadmap">
-        <span className="eyebrow">Flujo de prueba</span>
-        <h2>Login Kit → autorización → subir borrador → TikTok</h2>
-        <p>La prueba usa las APIs oficiales de TikTok y no automatiza likes, follows, comentarios ni vistas.</p>
+        <span className="eyebrow">Siguiente fase</span>
+        <h2>Calendario → cola automática → Facebook → métricas</h2>
+        <p>El calendario ya permite organizar publicaciones. El siguiente salto será guardar archivos en la nube y ejecutar la cola programada desde servidor.</p>
       </section>
     </main>
   );
