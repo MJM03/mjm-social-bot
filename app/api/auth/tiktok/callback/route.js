@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { encryptSession, tiktokCookie } from '../../../../lib/tiktokSession';
+import { firebaseConfigured, setDocument } from '../../../../lib/firebaseServer';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -53,7 +54,7 @@ export async function GET(request) {
   const profileData = await profileResponse.json().catch(() => ({}));
   const profile = profileData?.data?.user || null;
 
-  const encrypted = encryptSession({
+  const sessionPayload = {
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
     expires_in: tokenData.expires_in,
@@ -62,7 +63,21 @@ export async function GET(request) {
     scope: tokenData.scope || '',
     profile,
     connected_at: Date.now()
-  });
+  };
+  const encrypted = encryptSession(sessionPayload);
+
+  if (firebaseConfigured() && sessionPayload.open_id) {
+    try {
+      await setDocument('tiktok_connections', sessionPayload.open_id, {
+        encryptedSession: encrypted,
+        displayName: profile?.display_name || 'TikTok',
+        scope: sessionPayload.scope,
+        updatedAt: Date.now()
+      });
+    } catch (cloudError) {
+      console.error('No se pudo guardar la conexión TikTok en Firebase:', cloudError);
+    }
+  }
 
   const response = NextResponse.redirect(new URL('/tiktok-result?status=success', request.url));
   response.cookies.delete('tiktok_oauth_state');
