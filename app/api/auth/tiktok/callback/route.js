@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { encryptSession, tiktokCookie } from '../../../../lib/tiktokSession';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -45,8 +46,26 @@ export async function GET(request) {
     return NextResponse.redirect(new URL(`/tiktok-result?status=error&message=${encodeURIComponent(message)}`, request.url));
   }
 
-  // V1 intentionally does not persist tokens yet. We will add encrypted server-side storage next.
+  const profileResponse = await fetch('https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url', {
+    headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    cache: 'no-store'
+  });
+  const profileData = await profileResponse.json().catch(() => ({}));
+  const profile = profileData?.data?.user || null;
+
+  const encrypted = encryptSession({
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
+    expires_in: tokenData.expires_in,
+    refresh_expires_in: tokenData.refresh_expires_in,
+    open_id: tokenData.open_id || profile?.open_id || null,
+    scope: tokenData.scope || '',
+    profile,
+    connected_at: Date.now()
+  });
+
   const response = NextResponse.redirect(new URL('/tiktok-result?status=success', request.url));
   response.cookies.delete('tiktok_oauth_state');
+  response.cookies.set(tiktokCookie.name, encrypted, tiktokCookie.options);
   return response;
 }
