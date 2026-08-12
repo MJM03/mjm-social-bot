@@ -9,14 +9,21 @@ jobs:
   process-queue:
     runs-on: ubuntu-latest
     steps:
-      - name: Process scheduled content
+      - name: Check queue configuration
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
-            echo "CRON_SECRET is not configured"
-            exit 1
+            echo "Queue paused: CRON_SECRET is not configured yet."
+            echo "No request will be sent until the secret exists in GitHub Actions and Vercel."
+            exit 0
           fi
-          curl --fail-with-body --retry 2 \
+
+      - name: Process scheduled content
+        if: ${{ secrets.CRON_SECRET != '' }}
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --retry 2 --retry-delay 2 \
             -H "Authorization: Bearer $CRON_SECRET" \
             https://mjm-social-bot.vercel.app/api/queue/run
